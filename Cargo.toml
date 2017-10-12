@@ -1,0 +1,9 @@
+[package]
+name = "adts-reader"
+version = "0.1.0"
+authors = ["David Holroyd <dave@badgers-in-foil.co.uk>"]
+
+[dependencies]
+
+[dev-dependencies]
+bitstream-io = "0.6.3"
