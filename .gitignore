@@ -1,3 +1,5 @@
 /target/
+/resource/
 **/*.rs.bk
+**/.*.swp
 Cargo.lock
