@@ -6,6 +6,7 @@ description = "Rust reader for Audio Data Transport Stream (ADTS) frames"
 categories = [ "multimedia::audio", "parsing" ]
 repository = "https://github.com/dholroyd/adts-reader"
 readme = "README.md"
+license = "BSD-2-Clause"
 
 [dependencies]
 
