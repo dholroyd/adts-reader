@@ -52,7 +52,7 @@ fn run<R>(mut r: R) -> io::Result<()>
         match r.read(&mut buf[start..])? {
             0 => break,
             n => {
-                let start = parse(&buf[0..n], &mut count).map_err(|e| io::Error::new(io::ErrorKind::Other, format!("{:?}", e)))?;
+                start = parse(&buf[0..n], &mut count).map_err(|e| io::Error::new(io::ErrorKind::Other, format!("{:?}", e)))?;
                 let (head, tail) = buf[..].split_at_mut(start);
                 head.copy_from_slice(&tail[len-start..len])
             },
