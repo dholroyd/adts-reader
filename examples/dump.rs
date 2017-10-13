@@ -43,8 +43,8 @@ fn parse(buf: &[u8], count: &mut u64) -> Result<usize, AdtsHeaderError> {
 fn run<R>(mut r: R) -> io::Result<()>
     where R: io::Read, R: Sized
 {
-    const len: usize = 1024*1024;
-    let mut buf = [0u8; len];
+    const LEN: usize = 1024*1024;
+    let mut buf = [0u8; LEN];
     let reading = true;
     let mut start = 0;
     let mut count = 0;
@@ -54,7 +54,7 @@ fn run<R>(mut r: R) -> io::Result<()>
             n => {
                 start = parse(&buf[0..n], &mut count).map_err(|e| io::Error::new(io::ErrorKind::Other, format!("{:?}", e)))?;
                 let (head, tail) = buf[..].split_at_mut(start);
-                head.copy_from_slice(&tail[len-start..len])
+                head.copy_from_slice(&tail[LEN-start..LEN])
             },
         };
     }
