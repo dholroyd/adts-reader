@@ -1,3 +1,26 @@
+//! A Rust parser for the [Audio Data Transport Stream](https://wiki.multimedia.cx/index.php/ADTS)
+//! framing format often used to carry encoded AAC audio data.
+//!
+//! [`AdtsHeader`](struct.AdtsHeader.html) is the primary type provided by this crate.
+//!
+//! Given a buffer containing some number of ADTS frames, the first frame may be inspected by
+//! constructing a header instance with,
+//!
+//! ```rust
+//! use adts_reader::AdtsHeader;
+//! # let buf: Vec<u8> = vec!(0xff, 0xf0, 0, 0, 0, 0, 0, 0, 0);
+//! // let buf = ...;
+//! match AdtsHeader::from_bytes(&buf) {
+//!     Ok(header) => println!("length (headers+payload) is {}", header.frame_length()),
+//!     Err(e) => panic!("failed to read header: {:?}", e),
+//! }
+//! ```
+//!
+//! # TODO
+//!
+//!  - CRC handling
+//!  - Iterator over frames within a given buffer
+
 #[cfg(test)]
 extern crate bitstream_io;
 
@@ -209,6 +232,7 @@ impl<'buf> AdtsHeader<'buf> {
         }
     }
 
+    // Indicates what type of AAC data this stream contains
     pub fn audio_object_type(&self) -> AudioObjectType {
         match self.buf[2] & 0b1100_0000 {
             0b0000_0000 => AudioObjectType::AacMain,
@@ -284,12 +308,15 @@ impl<'buf> AdtsHeader<'buf> {
 
     /// The number of data blocks in the frame, a value between 1 and 4 inclusive.
     ///
-    /// Note that in the serialised ADTS data represents 1 block by storing the value '0', so this
-    /// method returns the stored value + 1).
+    /// (Note that in the serialised ADTS data stores the _number of blocks - 1_.  This method
+    /// returns the actual number of blocks by adding one to the serialised value.)
+    ///
+    /// Most streams store a single block per ADTS frame
     pub fn number_of_raw_data_blocks_in_frame(&self) -> u8 {
         (self.buf[6] & 0b11) + 1
     }
 
+    /// The payload AAC data inside this ADTS frame
     pub fn payload(&self) -> Result<&'buf[u8], PayloadError> {
         let len = self.frame_length() as usize;
         if self.buf.len() < len {
