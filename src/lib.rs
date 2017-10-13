@@ -212,8 +212,8 @@ impl<'buf> AdtsHeader<'buf> {
     pub fn audio_object_type(&self) -> AudioObjectType {
         match self.buf[2] & 0b1100_0000 {
             0b0000_0000 => AudioObjectType::AacMain,
-            0b1000_0000 => AudioObjectType::AacLC,
-            0b0100_0000 => AudioObjectType::AacSSR,
+            0b0100_0000 => AudioObjectType::AacLC,
+            0b1000_0000 => AudioObjectType::AacSSR,
             0b1100_0000 => AudioObjectType::AacLTP,
             v => panic!("impossible value {:#b}", v),
         }
