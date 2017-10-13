@@ -2,6 +2,10 @@
 name = "adts-reader"
 version = "0.1.0"
 authors = ["David Holroyd <dave@badgers-in-foil.co.uk>"]
+description = "Rust reader for Audio Data Transport Stream (ADTS) frames"
+categories = [ "multimedia::audio", "parsing" ]
+repository = "https://github.com/dholroyd/adts-reader"
+readme = "README.md"
 
 [dependencies]
 
