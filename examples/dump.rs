@@ -7,17 +7,23 @@ use std::env;
 use std::fs::File;
 use std::io;
 
-fn parse(buf: &[u8], count: &mut u64) -> Result<usize, AdtsHeaderError> {
+fn parse(buf: &[u8], frame_count: &mut u64, byte_count: usize) -> Result<usize, AdtsHeaderError> {
     let mut pos = 0;
-    while pos < buf.len() {
-        let h = AdtsHeader::from_bytes(&buf[pos..])?;
+    while pos <= buf.len() {
+        let h = match AdtsHeader::from_bytes(&buf[pos..]) {
+            Ok(header) => header,
+            Err(AdtsHeaderError::NotEnoughData{..}) => {
+                return Ok(pos)}
+            ,
+            Err(e) => return Err(e),
+        };
         let new_pos = pos + h.frame_length() as usize;
         if new_pos > buf.len() {
-            return Ok(buf.len() - pos);
+            return Ok(pos);
         }
         println!("{}:{:#x} {:?} {:?} {:?} {:?} private_bit={} {:?} {:?} home={} copyright_bit={} id_start={:?} frame_length={} buffer_fullness={} blocks={}",
-                 count,
-                 pos,
+                 frame_count,
+                 byte_count+pos,
                  h.mpeg_version(),
                  h.protection(),
                  h.audio_object_type(),
@@ -35,7 +41,7 @@ fn parse(buf: &[u8], count: &mut u64) -> Result<usize, AdtsHeaderError> {
             hexdump::hexdump(payload);
         }
         pos = new_pos;
-        *count += 1;
+        *frame_count += 1;
     }
     Ok(0)
 }
@@ -46,15 +52,23 @@ fn run<R>(mut r: R) -> io::Result<()>
     const LEN: usize = 1024*1024;
     let mut buf = [0u8; LEN];
     let reading = true;
+    let mut frame_count = 0;
     let mut start = 0;
-    let mut count = 0;
+    let mut byte_count = 0;
     while reading {
         match r.read(&mut buf[start..])? {
             0 => break,
             n => {
-                start = parse(&buf[0..n], &mut count).map_err(|e| io::Error::new(io::ErrorKind::Other, format!("{:?}", e)))?;
-                let (head, tail) = buf[..].split_at_mut(start);
-                head.copy_from_slice(&tail[LEN-start..LEN])
+                let target = &mut buf[0..n+start];
+                let next_frame = parse(target, &mut frame_count, byte_count).map_err(|e| io::Error::new(io::ErrorKind::Other, format!("{:?}", e)))?;
+                if next_frame > 0 {
+                    let (head, tail) = target.split_at_mut(next_frame);
+                    head[..tail.len()].copy_from_slice(&tail);
+                    start = tail.len();
+                } else {
+                    start = 0;
+                }
+                byte_count += n;
             },
         };
     }
