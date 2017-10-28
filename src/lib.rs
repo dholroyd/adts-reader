@@ -8,7 +8,7 @@
 //!
 //! ```rust
 //! use adts_reader::AdtsHeader;
-//! # let buf: Vec<u8> = vec!(0xff, 0xf0, 0, 0, 0, 0, 0, 0, 0);
+//! # let buf: Vec<u8> = vec!(0xff, 0xf0, 0, 0, 1, 0x20, 0, 0, 0);
 //! // let buf = ...;
 //! match AdtsHeader::from_bytes(&buf) {
 //!     Ok(header) => println!("length (headers+payload) is {}", header.frame_length()),
@@ -36,6 +36,12 @@ pub enum AdtsHeaderError {
     BadSyncWord(u16),
     NotEnoughData {
         expected: usize,
+        actual: usize,
+    },
+    /// The frame_length field stored in the ADTS header is invalid as it holds a value smaller
+    /// than the size of the header fields
+    BadFrameLength {
+        minimum: usize,
         actual: usize,
     }
 }
@@ -198,6 +204,9 @@ impl<'buf> AdtsHeader<'buf> {
         let crc_len = 2;
         if header.protection() == ProtectionIndicator::CrcPresent {
             Self::check_len(header_len+crc_len, buf.len())?;
+        }
+        if header.frame_length() < header.header_length() {
+            return Err(AdtsHeaderError::BadFrameLength { actual: header.frame_length() as usize, minimum: header.header_length() as usize })
         }
         Ok(header)
     }
@@ -372,6 +381,7 @@ enum AdtsState {
 #[derive(Debug,PartialEq)]
 pub enum AdtsParseError {
     BadSyncWord,
+    BadFrameLength,
 }
 
 /// Trait to be implemented by types that wish to consume the ADTS data produced by [`AdtsParser`](struct.AdtsParser.html).
@@ -495,6 +505,10 @@ where
                                 self.consumer.error(AdtsParseError::BadSyncWord);
                                 return;
                             },
+                            AdtsHeaderError::BadFrameLength{..} => {
+                                self.consumer.error(AdtsParseError::BadFrameLength);
+                                return;
+                            },
                             AdtsHeaderError::NotEnoughData{expected, ..} => {
                                 self.desired_data_len = Some(expected);
                                 still_more = true;
@@ -522,6 +536,10 @@ where
                     match e {
                         AdtsHeaderError::BadSyncWord{..} => {
                             self.consumer.error(AdtsParseError::BadSyncWord)
+                        },
+                        AdtsHeaderError::BadFrameLength{..} => {
+                            self.consumer.error(AdtsParseError::BadFrameLength);
+                            return;
                         },
                         AdtsHeaderError::NotEnoughData{expected, ..} => {
                             self.remember(remaining_data, expected);
