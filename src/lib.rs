@@ -488,7 +488,7 @@ where
                 let mut still_more = false;  // TODO: this is horrible
                 match AdtsHeader::from_bytes(&self.incomplete_frame[..]) {
                     Ok(header) => {
-                        if (header.frame_length() as usize) < self.incomplete_frame.len() {
+                        if (header.frame_length() as usize) > self.incomplete_frame.len() {
                             self.desired_data_len = Some(header.frame_length() as usize);
                             still_more = true;
                         } else {
@@ -584,10 +584,10 @@ where
                     h.number_of_raw_data_blocks_in_frame(),
                     payload);
             },
-            Err(PayloadError{..}) => {
+            Err(PayloadError{ expected, actual }) => {
                 // since we echecked we had enough data for the whole frame above, this must be
                 // a bug,
-                panic!("Unexpected PayloadError");
+                panic!("Unexpected payload size mismatch: expected {}, actual size {}", expected, actual);
             },
         }
     }
@@ -690,5 +690,15 @@ mod tests {
         });
         let mut parser = AdtsParser::new(MockConsumer::new());
         parser.push(&header_data[..]);
+    }
+
+    #[test]
+    fn too_short() {
+        let header_data = make_test_data(|mut w| {
+            write_frame(&mut w)
+        });
+        let mut parser = AdtsParser::new(MockConsumer::new());
+        let res = parser.push(&header_data[..5]);
+        let res = parser.push(&header_data[5..7]);
     }
 }
