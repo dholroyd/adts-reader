@@ -62,9 +62,13 @@ pub enum MpegVersion {
 
 #[derive(Debug,PartialEq)]
 pub enum AudioObjectType {
+    /// 'Main' profile
     AacMain,
+    /// 'Low Complexity' profile
     AacLC,
+    /// 'Scalable Sample Rate' profile
     AacSSR,
+    /// 'Long Term Prediction' profile
     AacLTP,
 }
 
@@ -76,17 +80,29 @@ pub enum ProtectionIndicator {
 
 #[derive(Debug,PartialEq)]
 pub enum SamplingFrequency {
+    /// 96kHz
     Freq96000 = 0x0,
+    /// 88.2kHz
     Freq88200 = 0x1,
+    /// 64kHz
     Freq64000 = 0x2,
+    /// 48kHz
     Freq48000 = 0x3,
+    /// 44.1kHz
     Freq44100 = 0x4,
+    /// 32kHz
     Freq32000 = 0x5,
+    /// 24kHz
     Freq24000 = 0x6,
+    /// 22.05kHz
     Freq22050 = 0x7,
+    /// 16kHz
     Freq16000 = 0x8,
+    /// 12kHz
     Freq12000 = 0x9,
+    /// 11.025kHz
     Freq11025 = 0xa,
+    /// 8kHz
     Freq8000  = 0xb,
     FreqReserved0xc = 0xc,
     FreqReserved0xd = 0xd,
