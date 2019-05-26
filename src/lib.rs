@@ -623,7 +623,7 @@ where
                     payload);
             },
             Err(PayloadError{ expected, actual }) => {
-                // since we echecked we had enough data for the whole frame above, this must be
+                // since we checked we had enough data for the whole frame above, this must be
                 // a bug,
                 panic!("Unexpected payload size mismatch: expected {}, actual size {}", expected, actual);
             },
