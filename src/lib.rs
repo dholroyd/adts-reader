@@ -488,7 +488,7 @@ pub struct AdtsParser<C>
 where
     C: AdtsConsumer,
 {
-    consumer: C,
+    pub consumer: C,
     current_config: [u8; 3],
     state: AdtsState,
     incomplete_frame: Vec<u8>,
