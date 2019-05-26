@@ -410,6 +410,7 @@ pub struct CopyrightIdentification {
     pub copyright_number: u64,
 }
 
+#[derive(PartialEq)]
 enum AdtsState {
     Start,
     Incomplete,
@@ -501,6 +502,18 @@ where
         self.incomplete_frame.clear();
         self.incomplete_frame.extend_from_slice(remaining_data);
         self.desired_data_len = Some(desired_data_len);
+    }
+
+    /// Initialize or re-initialize parser state.  Call this function before processing a group of
+    /// ADTS frames to ensure that any error state due to proccessing an earlier group of ADTS
+    /// frames is cleared.
+    pub fn start(&mut self) {
+        if self.state == AdtsState::Incomplete {
+            self.incomplete_frame.clear();
+            self.desired_data_len = None;
+            eprintln!("ADTS: incompete data buffer dropped by call to start()");
+        }
+        self.state = AdtsState::Start;
     }
 
     /// Extracts information about each ADTS frame in the given buffer, which is passed to the
