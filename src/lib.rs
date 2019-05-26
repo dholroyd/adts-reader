@@ -600,7 +600,7 @@ where
         }
     }
 
-    fn push_config(current_config: &mut [u8; 3], consumer: &mut AdtsConsumer, h: &AdtsHeader, frame_buffer: &[u8]) {
+    fn push_config(current_config: &mut [u8; 3], consumer: &mut C, h: &AdtsHeader, frame_buffer: &[u8]) {
         current_config.copy_from_slice(&frame_buffer[0..3]);
         consumer.new_config(
             h.mpeg_version(),
@@ -614,7 +614,7 @@ where
         );
     }
 
-    fn push_payload(consumer: &mut AdtsConsumer, h: AdtsHeader) {
+    fn push_payload(consumer: &mut C, h: AdtsHeader) {
         match h.payload() {
             Ok(payload) => {
                 consumer.payload(
