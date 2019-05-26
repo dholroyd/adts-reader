@@ -716,7 +716,7 @@ mod tests {
             self.assert_seq(new_payload_seq);
         }
         fn error(&mut self, err: AdtsParseError) {
-            assert!(false, "no errors expected in bitstream");
+            panic!("no errors expected in bitstream");
         }
     }
 
