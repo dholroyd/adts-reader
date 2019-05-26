@@ -2,6 +2,11 @@
 A Rust parser for the [Audio Data Transport Stream](https://wiki.multimedia.cx/index.php/ADTS)
 framing format used to carry encoded AAC audio data.
 
+👉 **NB** This is not an AAC decoder, nor is it able to parse the syntax of the AAC bitstream within the ADTS payload.
+
+This parser is _zero-copy_ for ADTS frames entirely contained within a given source `&[u8]` byte slice (copying will
+happen when an ADTS frame straddles the boundary from one source buffer to the next).
+
 Calling code should,
  - Provide an implementation of `AdtsConsumer` which will recieve callbacks as ADTS frame payloads are found
  - Pass buffers containing ADTS data into the `AdtsParser::push()` method
@@ -9,9 +14,9 @@ Calling code should,
 ## Incremental parsing
 The byte slice passed to `push()` need not end exactly at the boundry of an ADTS frame.  Partial ADTS data
 remaining at the end of the given slice will be buffered internally in the parser, and the continuation of the ADTS
-data must be provided in a subsequent call to `push()`.  This construction is intended to make it convinient to pass
-payloads of the individual _MPEG Transport Stream_ packets in which ADTS data is commonly embedded without having to
-pay the cost of reassembling an entire _PES packet_.
+data must be provided in the subsequent call to `push()`.  This construction is intended to make it convinient to pass
+payloads of the individual _MPEG Transport Stream_ packets in which ADTS data is commonly embedded, without having to
+pay the cost of reassembling entire _PES packets_.
 
 ## Encoder configuration
 ADTS frames include header data indicating the AAC encoder configuration, which will be made available to the calling
