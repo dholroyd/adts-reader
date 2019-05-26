@@ -45,24 +45,24 @@ pub enum AdtsHeaderError {
     BadFrameLength {
         minimum: usize,
         actual: usize,
-    }
+    },
 }
 
 /// Error indicating that not enough data was provided to `AdtsHeader` to be able to extract the
 /// whole ADTS payload following the header fields.
-#[derive(Debug,PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct PayloadError {
     pub expected: usize,
     pub actual: usize,
 }
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum MpegVersion {
     Mpeg2,
     Mpeg4,
 }
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum AudioObjectType {
     /// 'Main' profile
     AacMain,
@@ -74,13 +74,13 @@ pub enum AudioObjectType {
     AacLTP,
 }
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum ProtectionIndicator {
     CrcPresent,
     CrcAbsent,
 }
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum SamplingFrequency {
     /// 96kHz
     Freq96000 = 0x0,
@@ -105,7 +105,7 @@ pub enum SamplingFrequency {
     /// 11.025kHz
     Freq11025 = 0xa,
     /// 8kHz
-    Freq8000  = 0xb,
+    Freq8000 = 0xb,
     FreqReserved0xc = 0xc,
     FreqReserved0xd = 0xd,
     FreqReserved0xe = 0xe,
@@ -148,7 +148,7 @@ impl SamplingFrequency {
             &SamplingFrequency::Freq16000 => Some(16000),
             &SamplingFrequency::Freq12000 => Some(12000),
             &SamplingFrequency::Freq11025 => Some(11025),
-            &SamplingFrequency::Freq8000  => Some(8000),
+            &SamplingFrequency::Freq8000 => Some(8000),
             &SamplingFrequency::FreqReserved0xc => None,
             &SamplingFrequency::FreqReserved0xd => None,
             &SamplingFrequency::FreqReserved0xe => None,
@@ -157,7 +157,7 @@ impl SamplingFrequency {
     }
 }
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum ChannelConfiguration {
     ObjectTypeSpecificConfig = 0x0,
     Mono = 0x1,
@@ -184,13 +184,13 @@ impl ChannelConfiguration {
     }
 }
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum Originality {
     Original,
     Copy,
 }
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum CopyrightIdentificationStart {
     Start,
     Other,
@@ -198,7 +198,7 @@ pub enum CopyrightIdentificationStart {
 
 /// Extract information for a single ADTS frame from the start of the given byte buffer .
 pub struct AdtsHeader<'buf> {
-    buf: &'buf[u8],
+    buf: &'buf [u8],
 }
 impl<'buf> AdtsHeader<'buf> {
     /// Construct an instance by borrowing the given byte buffer.  The given buffer may be longer
@@ -210,31 +210,29 @@ impl<'buf> AdtsHeader<'buf> {
     /// the whole of the payload that the header indicates should be present (however _if_ there is
     /// not enough data to hold the payload, then [`payload()`](#method.payload) will return
     /// `None`).
-    pub fn from_bytes(buf: &'buf[u8]) -> Result<AdtsHeader, AdtsHeaderError> {
+    pub fn from_bytes(buf: &'buf [u8]) -> Result<AdtsHeader, AdtsHeaderError> {
         let header_len = 7;
         Self::check_len(header_len, buf.len())?;
-        let header = AdtsHeader {
-            buf,
-        };
+        let header = AdtsHeader { buf };
         if header.sync_word() != 0xfff {
             return Err(AdtsHeaderError::BadSyncWord(header.sync_word()));
         }
         let crc_len = 2;
         if header.protection() == ProtectionIndicator::CrcPresent {
-            Self::check_len(header_len+crc_len, buf.len())?;
+            Self::check_len(header_len + crc_len, buf.len())?;
         }
         if header.frame_length() < header.header_length() {
-            return Err(AdtsHeaderError::BadFrameLength { actual: header.frame_length() as usize, minimum: header.header_length() as usize })
+            return Err(AdtsHeaderError::BadFrameLength {
+                actual: header.frame_length() as usize,
+                minimum: header.header_length() as usize,
+            });
         }
         Ok(header)
     }
 
     fn check_len(expected: usize, actual: usize) -> Result<(), AdtsHeaderError> {
         if actual < expected {
-            Err(AdtsHeaderError::NotEnoughData{
-                expected,
-                actual,
-            })
+            Err(AdtsHeaderError::NotEnoughData { expected, actual })
         } else {
             Ok(())
         }
@@ -321,9 +319,9 @@ impl<'buf> AdtsHeader<'buf> {
 
     /// length of this frame, including the length of the header.
     pub fn frame_length(&self) -> u16 {
-        u16::from(self.buf[3] & 0b11) << 11 |
-        u16::from(self.buf[4]       ) << 3  |
-        u16::from(self.buf[5]       ) >> 5
+        u16::from(self.buf[3] & 0b11) << 11
+            | u16::from(self.buf[4]) << 3
+            | u16::from(self.buf[5]) >> 5
     }
 
     /// Calculates the length of the frame payload from the `frame_length` header value, and the
@@ -339,8 +337,7 @@ impl<'buf> AdtsHeader<'buf> {
     }
 
     pub fn adts_buffer_fullness(&self) -> u16 {
-        u16::from(self.buf[5] & 0b00000011) << 6 |
-        u16::from(self.buf[6]) >> 2
+        u16::from(self.buf[5] & 0b00000011) << 6 | u16::from(self.buf[6]) >> 2
     }
 
     /// Gives the 16-bit cyclic redundancy check value stored in this frame header, or `None` if
@@ -350,10 +347,9 @@ impl<'buf> AdtsHeader<'buf> {
     pub fn crc(&self) -> Option<u16> {
         match self.protection() {
             ProtectionIndicator::CrcAbsent => None,
-            ProtectionIndicator::CrcPresent => Some(
-                u16::from(self.buf[7]) << 8 |
-                u16::from(self.buf[8])
-            ),
+            ProtectionIndicator::CrcPresent => {
+                Some(u16::from(self.buf[7]) << 8 | u16::from(self.buf[8]))
+            }
         }
     }
 
@@ -368,10 +364,13 @@ impl<'buf> AdtsHeader<'buf> {
     }
 
     /// The payload AAC data inside this ADTS frame
-    pub fn payload(&self) -> Result<&'buf[u8], PayloadError> {
+    pub fn payload(&self) -> Result<&'buf [u8], PayloadError> {
         let len = self.frame_length() as usize;
         if self.buf.len() < len {
-            Err(PayloadError { expected: len, actual: self.buf.len() })
+            Err(PayloadError {
+                expected: len,
+                actual: self.buf.len(),
+            })
         } else {
             Ok(&self.buf[self.header_length() as usize..len])
         }
@@ -388,23 +387,32 @@ impl<'buf> fmt::Debug for AdtsHeader<'buf> {
             .field("channel_configuration", &self.channel_configuration())
             .field("originality", &self.originality())
             .field("home", &self.home())
-            .field("copyright_identification_bit", &self.copyright_identification_bit())
-            .field("copyright_identification_start", &self.copyright_identification_start())
+            .field(
+                "copyright_identification_bit",
+                &self.copyright_identification_bit(),
+            )
+            .field(
+                "copyright_identification_start",
+                &self.copyright_identification_start(),
+            )
             .field("frame_length", &self.frame_length())
             .field("adts_buffer_fullness", &self.adts_buffer_fullness())
             .field("crc", &self.crc())
-            .field("number_of_raw_data_blocks_in_frame", &self.number_of_raw_data_blocks_in_frame())
+            .field(
+                "number_of_raw_data_blocks_in_frame",
+                &self.number_of_raw_data_blocks_in_frame(),
+            )
             .finish()
     }
 }
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum CopyrightIdErr {
     TooFewBits,
     TooManyBits,
 }
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct CopyrightIdentification {
     pub copyright_identifier: u8,
     pub copyright_number: u64,
@@ -417,7 +425,7 @@ enum AdtsState {
     Error,
 }
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum AdtsParseError {
     BadSyncWord,
     BadFrameLength,
@@ -454,7 +462,17 @@ pub trait AdtsConsumer {
     /// however appear in every frame (so that the bitstream format can support seeking, not that
     /// this implementation helps there) and so it would be possible for a malformed bitstream to
     /// signal a configuration change part way through.
-    fn new_config(&mut self, mpeg_version: MpegVersion, protection: ProtectionIndicator, aot: AudioObjectType, freq: SamplingFrequency, private_bit: u8, channels: ChannelConfiguration, originality: Originality, home: u8);
+    fn new_config(
+        &mut self,
+        mpeg_version: MpegVersion,
+        protection: ProtectionIndicator,
+        aot: AudioObjectType,
+        freq: SamplingFrequency,
+        private_bit: u8,
+        channels: ChannelConfiguration,
+        originality: Originality,
+        home: u8,
+    );
 
     /// called with the ADTS frame payload, and frame-specific header values
     fn payload(&mut self, buffer_fullness: u16, number_of_blocks: u8, buf: &[u8]);
@@ -471,24 +489,24 @@ pub trait AdtsConsumer {
 /// data.
 pub struct AdtsParser<C>
 where
-    C: AdtsConsumer
+    C: AdtsConsumer,
 {
     consumer: C,
     current_config: [u8; 3],
     state: AdtsState,
     incomplete_frame: Vec<u8>,
-    desired_data_len: Option<usize>
+    desired_data_len: Option<usize>,
 }
 impl<C> AdtsParser<C>
 where
-    C: AdtsConsumer
+    C: AdtsConsumer,
 {
     pub fn new(consumer: C) -> AdtsParser<C> {
         AdtsParser {
             consumer,
             current_config: [0; 3],
             state: AdtsState::Start,
-            incomplete_frame: vec!(),
+            incomplete_frame: vec![],
             desired_data_len: None,
         }
     }
@@ -524,7 +542,7 @@ where
     /// passed in another buffer in the next call to this method.
     pub fn push(&mut self, adts_buf: &[u8]) {
         let buf: &[u8] = match self.state {
-            AdtsState::Error => return,  // TODO: resync to recover from bitstream errors
+            AdtsState::Error => return, // TODO: resync to recover from bitstream errors
             AdtsState::Incomplete => {
                 // on last call too push(), the end of the adts_buf held the start of an ADTS
                 // frame, and we copied that data into incomplete_buffer, so now lets try to add
@@ -535,8 +553,9 @@ where
                     self.incomplete_frame.extend_from_slice(adts_buf);
                     return;
                 }
-                self.incomplete_frame.extend_from_slice(&adts_buf[..to_read]);
-                let mut still_more = false;  // TODO: this is horrible
+                self.incomplete_frame
+                    .extend_from_slice(&adts_buf[..to_read]);
+                let mut still_more = false; // TODO: this is horrible
                 match AdtsHeader::from_bytes(&self.incomplete_frame[..]) {
                     Ok(header) => {
                         if (header.frame_length() as usize) > self.incomplete_frame.len() {
@@ -544,38 +563,41 @@ where
                             still_more = true;
                         } else {
                             if self.is_new_config(&self.incomplete_frame[..]) {
-                                Self::push_config(&mut self.current_config, &mut self.consumer, &header, &self.incomplete_frame[..]);
+                                Self::push_config(
+                                    &mut self.current_config,
+                                    &mut self.consumer,
+                                    &header,
+                                    &self.incomplete_frame[..],
+                                );
                             }
                             Self::push_payload(&mut self.consumer, header);
                         }
-                    },
+                    }
                     Err(e) => {
                         self.state = AdtsState::Error;
                         match e {
-                            AdtsHeaderError::BadSyncWord{..} => {
+                            AdtsHeaderError::BadSyncWord { .. } => {
                                 self.consumer.error(AdtsParseError::BadSyncWord);
                                 return;
-                            },
-                            AdtsHeaderError::BadFrameLength{..} => {
+                            }
+                            AdtsHeaderError::BadFrameLength { .. } => {
                                 self.consumer.error(AdtsParseError::BadFrameLength);
                                 return;
-                            },
-                            AdtsHeaderError::NotEnoughData{expected, ..} => {
+                            }
+                            AdtsHeaderError::NotEnoughData { expected, .. } => {
                                 self.desired_data_len = Some(expected);
                                 still_more = true;
-                            },
+                            }
                         }
-                    },
+                    }
                 }
                 if still_more {
                     self.incomplete_frame.extend_from_slice(adts_buf);
                     return;
                 }
                 &adts_buf[to_read..]
-            },
-            AdtsState::Start => {
-                adts_buf
-            },
+            }
+            AdtsState::Start => adts_buf,
         };
         let mut pos = 0;
         while pos <= buf.len() {
@@ -585,20 +607,20 @@ where
                 Err(e) => {
                     self.state = AdtsState::Error;
                     match e {
-                        AdtsHeaderError::BadSyncWord{..} => {
+                        AdtsHeaderError::BadSyncWord { .. } => {
                             self.consumer.error(AdtsParseError::BadSyncWord)
-                        },
-                        AdtsHeaderError::BadFrameLength{..} => {
+                        }
+                        AdtsHeaderError::BadFrameLength { .. } => {
                             self.consumer.error(AdtsParseError::BadFrameLength);
                             return;
-                        },
-                        AdtsHeaderError::NotEnoughData{expected, ..} => {
+                        }
+                        AdtsHeaderError::NotEnoughData { expected, .. } => {
                             self.remember(remaining_data, expected);
                             return;
-                        },
+                        }
                     }
                     return;
-                },
+                }
             };
             let new_pos = pos + h.frame_length() as usize;
             if new_pos > buf.len() {
@@ -606,14 +628,24 @@ where
                 return;
             }
             if self.is_new_config(remaining_data) {
-                Self::push_config(&mut self.current_config, &mut self.consumer, &h, remaining_data);
+                Self::push_config(
+                    &mut self.current_config,
+                    &mut self.consumer,
+                    &h,
+                    remaining_data,
+                );
             }
             Self::push_payload(&mut self.consumer, h);
             pos = new_pos;
         }
     }
 
-    fn push_config(current_config: &mut [u8; 3], consumer: &mut C, h: &AdtsHeader, frame_buffer: &[u8]) {
+    fn push_config(
+        current_config: &mut [u8; 3],
+        consumer: &mut C,
+        h: &AdtsHeader,
+        frame_buffer: &[u8],
+    ) {
         current_config.copy_from_slice(&frame_buffer[0..3]);
         consumer.new_config(
             h.mpeg_version(),
@@ -633,26 +665,30 @@ where
                 consumer.payload(
                     h.adts_buffer_fullness(),
                     h.number_of_raw_data_blocks_in_frame(),
-                    payload);
-            },
-            Err(PayloadError{ expected, actual }) => {
+                    payload,
+                );
+            }
+            Err(PayloadError { expected, actual }) => {
                 // since we checked we had enough data for the whole frame above, this must be
                 // a bug,
-                panic!("Unexpected payload size mismatch: expected {}, actual size {}", expected, actual);
-            },
+                panic!(
+                    "Unexpected payload size mismatch: expected {}, actual size {}",
+                    expected, actual
+                );
+            }
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use bitstream_io::{BitWriter, BE};
     use std::io;
-    use bitstream_io::{BE, BitWriter};
     use *;
 
     fn make_test_data<F>(builder: F) -> Vec<u8>
     where
-        F: Fn(BitWriter<BE>)->Result<(), io::Error>
+        F: Fn(BitWriter<BE>) -> Result<(), io::Error>,
     {
         let mut data: Vec<u8> = Vec::new();
         builder(BitWriter::<BE>::new(&mut data)).unwrap();
@@ -660,29 +696,27 @@ mod tests {
     }
 
     fn write_frame(w: &mut BitWriter<BE>) -> Result<(), io::Error> {
-            w.write(12, 0xfff)?;// sync_word
-            w.write(1, 0)?;     // mpeg_version
-            w.write(2, 0)?;     // layer
-            w.write(1, 1)?;     // protection_absent
-            w.write(2, 0)?;     // object_type
-            w.write(4, 0b0011)?;// sampling_frequency_index
-            w.write(1, 1)?;     // private_bit
-            w.write(3, 2)?;     // channel_configuration
-            w.write(1, 1)?;     // original_copy
-            w.write(1, 0)?;     // home
-            w.write(1, 0)?;     // copyright_identification_bit
-            w.write(1, 1)?;     // copyright_identification_start
-            w.write(13, 8)?;    // frame_length
-            w.write(11, 123)?;  // adts_buffer_fullness
-            w.write(2, 0)?;     // number_of_raw_data_blocks_in_frame
-            w.write(8, 0b10000001)  // 1 byte of payload data
+        w.write(12, 0xfff)?; // sync_word
+        w.write(1, 0)?; // mpeg_version
+        w.write(2, 0)?; // layer
+        w.write(1, 1)?; // protection_absent
+        w.write(2, 0)?; // object_type
+        w.write(4, 0b0011)?; // sampling_frequency_index
+        w.write(1, 1)?; // private_bit
+        w.write(3, 2)?; // channel_configuration
+        w.write(1, 1)?; // original_copy
+        w.write(1, 0)?; // home
+        w.write(1, 0)?; // copyright_identification_bit
+        w.write(1, 1)?; // copyright_identification_start
+        w.write(13, 8)?; // frame_length
+        w.write(11, 123)?; // adts_buffer_fullness
+        w.write(2, 0)?; // number_of_raw_data_blocks_in_frame
+        w.write(8, 0b10000001) // 1 byte of payload data
     }
 
     #[test]
     fn no_crc() {
-        let header_data = make_test_data(|mut w| {
-            write_frame(&mut w)
-        });
+        let header_data = make_test_data(|mut w| write_frame(&mut w));
         let header = AdtsHeader::from_bytes(&header_data[..]).unwrap();
         assert_eq!(header.mpeg_version(), MpegVersion::Mpeg4);
         assert_eq!(header.protection(), ProtectionIndicator::CrcAbsent);
@@ -693,7 +727,10 @@ mod tests {
         assert_eq!(header.originality(), Originality::Copy);
         assert_eq!(header.home(), 0);
         assert_eq!(header.copyright_identification_bit(), 0);
-        assert_eq!(header.copyright_identification_start(), CopyrightIdentificationStart::Start);
+        assert_eq!(
+            header.copyright_identification_start(),
+            CopyrightIdentificationStart::Start
+        );
         assert_eq!(header.frame_length(), 8);
         assert_eq!(header.payload_length(), Some(8 - 7));
         assert_eq!(header.adts_buffer_fullness(), 123);
@@ -719,7 +756,17 @@ mod tests {
     }
     impl AdtsConsumer for MockConsumer {
         // TODO: assertions are terribly brittle
-        fn new_config(&mut self, mpeg_version: MpegVersion, protection: ProtectionIndicator, aot: AudioObjectType, freq: SamplingFrequency, private_bit: u8, channels: ChannelConfiguration, originality: Originality, home: u8) {
+        fn new_config(
+            &mut self,
+            mpeg_version: MpegVersion,
+            protection: ProtectionIndicator,
+            aot: AudioObjectType,
+            freq: SamplingFrequency,
+            private_bit: u8,
+            channels: ChannelConfiguration,
+            originality: Originality,
+            home: u8,
+        ) {
             self.assert_seq(0);
             assert_eq!(mpeg_version, MpegVersion::Mpeg4);
         }
@@ -745,9 +792,7 @@ mod tests {
 
     #[test]
     fn too_short() {
-        let header_data = make_test_data(|mut w| {
-            write_frame(&mut w)
-        });
+        let header_data = make_test_data(|mut w| write_frame(&mut w));
         let mut parser = AdtsParser::new(MockConsumer::new());
         let res = parser.push(&header_data[..5]);
         let res = parser.push(&header_data[5..7]);
