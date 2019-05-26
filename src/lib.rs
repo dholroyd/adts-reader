@@ -29,6 +29,8 @@
 #[cfg(test)]
 extern crate bitstream_io;
 
+use std::fmt;
+
 #[derive(Debug)]
 pub enum AdtsHeaderError {
     /// Indicates that the given buffer did not start with the required sequence of 12 '1'-bits
@@ -373,6 +375,26 @@ impl<'buf> AdtsHeader<'buf> {
         } else {
             Ok(&self.buf[self.header_length() as usize..len])
         }
+    }
+}
+impl<'buf> fmt::Debug for AdtsHeader<'buf> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        f.debug_struct("AdtsHeader")
+            .field("mpeg_version", &self.mpeg_version())
+            .field("protection", &self.protection())
+            .field("audio_object_type", &self.audio_object_type())
+            .field("sampling_frequency", &self.sampling_frequency())
+            .field("private_bit", &self.private_bit())
+            .field("channel_configuration", &self.channel_configuration())
+            .field("originality", &self.originality())
+            .field("home", &self.home())
+            .field("copyright_identification_bit", &self.copyright_identification_bit())
+            .field("copyright_identification_start", &self.copyright_identification_start())
+            .field("frame_length", &self.frame_length())
+            .field("adts_buffer_fullness", &self.adts_buffer_fullness())
+            .field("crc", &self.crc())
+            .field("number_of_raw_data_blocks_in_frame", &self.number_of_raw_data_blocks_in_frame())
+            .finish()
     }
 }
 
