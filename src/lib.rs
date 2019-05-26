@@ -26,9 +26,6 @@
 // TODO: might be better to implement AdtsParser as an iterator, rather then doing callbacks into a
 // trait implementation -- it looked hard to implement though!
 
-#[cfg(test)]
-extern crate bitstream_io;
-
 use std::fmt;
 
 #[derive(Debug)]
@@ -684,7 +681,7 @@ where
 mod tests {
     use bitstream_io::{BitWriter, BE};
     use std::io;
-    use *;
+    use super::*;
 
     fn make_test_data<F>(builder: F) -> Vec<u8>
     where
