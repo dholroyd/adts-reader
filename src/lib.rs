@@ -23,6 +23,9 @@
 //!  - Copyright identifiers (I don't have any example bitstreams to try)
 //!  - CRC handling (probably needs to be implemented as part of AAC bitstream parsing)
 
+#![forbid(unsafe_code)]
+#![deny(rust_2018_idioms, future_incompatible)]
+
 // TODO: might be better to implement AdtsParser as an iterator, rather then doing callbacks into a
 // trait implementation -- it looked hard to implement though!
 
@@ -207,7 +210,7 @@ impl<'buf> AdtsHeader<'buf> {
     /// the whole of the payload that the header indicates should be present (however _if_ there is
     /// not enough data to hold the payload, then [`payload()`](#method.payload) will return
     /// `None`).
-    pub fn from_bytes(buf: &'buf [u8]) -> Result<AdtsHeader, AdtsHeaderError> {
+    pub fn from_bytes(buf: &'buf [u8]) -> Result<AdtsHeader<'_>, AdtsHeaderError> {
         let header_len = 7;
         Self::check_len(header_len, buf.len())?;
         let header = AdtsHeader { buf };
@@ -374,7 +377,7 @@ impl<'buf> AdtsHeader<'buf> {
     }
 }
 impl<'buf> fmt::Debug for AdtsHeader<'buf> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         f.debug_struct("AdtsHeader")
             .field("mpeg_version", &self.mpeg_version())
             .field("protection", &self.protection())
@@ -640,7 +643,7 @@ where
     fn push_config(
         current_config: &mut [u8; 3],
         consumer: &mut C,
-        h: &AdtsHeader,
+        h: &AdtsHeader<'_>,
         frame_buffer: &[u8],
     ) {
         current_config.copy_from_slice(&frame_buffer[0..3]);
@@ -656,7 +659,7 @@ where
         );
     }
 
-    fn push_payload(consumer: &mut C, h: AdtsHeader) {
+    fn push_payload(consumer: &mut C, h: AdtsHeader<'_>) {
         match h.payload() {
             Ok(payload) => {
                 consumer.payload(
@@ -685,14 +688,14 @@ mod tests {
 
     fn make_test_data<F>(builder: F) -> Vec<u8>
     where
-        F: Fn(BitWriter<BE>) -> Result<(), io::Error>,
+        F: Fn(BitWriter<'_, BE>) -> Result<(), io::Error>,
     {
         let mut data: Vec<u8> = Vec::new();
         builder(BitWriter::<BE>::new(&mut data)).unwrap();
         data
     }
 
-    fn write_frame(w: &mut BitWriter<BE>) -> Result<(), io::Error> {
+    fn write_frame(w: &mut BitWriter<'_, BE>) -> Result<(), io::Error> {
         w.write(12, 0xfff)?; // sync_word
         w.write(1, 0)?; // mpeg_version
         w.write(2, 0)?; // layer
