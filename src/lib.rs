@@ -523,13 +523,13 @@ where
     }
 
     /// Initialize or re-initialize parser state.  Call this function before processing a group of
-    /// ADTS frames to ensure that any error state due to proccessing an earlier group of ADTS
+    /// ADTS frames to ensure that any error state due to processing an earlier group of ADTS
     /// frames is cleared.
     pub fn start(&mut self) {
         if self.state == AdtsState::Incomplete {
             self.incomplete_frame.clear();
             self.desired_data_len = None;
-            eprintln!("ADTS: incompete data buffer dropped by call to start()");
+            eprintln!("ADTS: incomplete data buffer dropped by call to start()");
         }
         self.state = AdtsState::Start;
     }
@@ -544,7 +544,7 @@ where
         let buf: &[u8] = match self.state {
             AdtsState::Error => return, // TODO: resync to recover from bitstream errors
             AdtsState::Incomplete => {
-                // on last call too push(), the end of the adts_buf held the start of an ADTS
+                // on last call to push(), the end of the adts_buf held the start of an ADTS
                 // frame, and we copied that data into incomplete_buffer, so now lets try to add
                 // enough initial bytes from the adts_buf given to this call to get a complete
                 // frame
