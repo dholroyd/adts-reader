@@ -763,25 +763,25 @@ mod tests {
         fn new_config(
             &mut self,
             mpeg_version: MpegVersion,
-            protection: ProtectionIndicator,
-            aot: AudioObjectType,
-            freq: SamplingFrequency,
-            private_bit: u8,
-            channels: ChannelConfiguration,
-            originality: Originality,
-            home: u8,
+            _protection: ProtectionIndicator,
+            _aot: AudioObjectType,
+            _freq: SamplingFrequency,
+            _private_bit: u8,
+            _channels: ChannelConfiguration,
+            _originality: Originality,
+            _home: u8,
         ) {
             self.assert_seq(0);
             assert_eq!(mpeg_version, MpegVersion::Mpeg4);
         }
-        fn payload(&mut self, buffer_fullness: u16, number_of_blocks: u8, buf: &[u8]) {
+        fn payload(&mut self, _buffer_fullness: u16, _number_of_blocks: u8, buf: &[u8]) {
             self.payload_seq += 1;
             let new_payload_seq = self.payload_seq;
             self.assert_seq(new_payload_seq);
             self.payload_size = Some(buf.len());
         }
         fn error(&mut self, err: AdtsParseError) {
-            panic!("no errors expected in bitstream");
+            panic!("no errors expected in bitstream: {:?}", err);
         }
     }
 
@@ -805,7 +805,7 @@ mod tests {
     fn too_short() {
         let header_data = make_test_data(|mut w| write_frame(&mut w));
         let mut parser = AdtsParser::new(MockConsumer::new());
-        let res = parser.push(&header_data[..5]);
-        let res = parser.push(&header_data[5..7]);
+        parser.push(&header_data[..5]);
+        parser.push(&header_data[5..7]);
     }
 }

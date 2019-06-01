@@ -6,7 +6,9 @@ use std::env;
 use std::fs::File;
 use std::io;
 
-struct DumpAdtsConsumer {}
+struct DumpAdtsConsumer {
+    frame_count: usize,
+}
 impl AdtsConsumer for DumpAdtsConsumer {
     fn new_config(
         &mut self,
@@ -31,6 +33,7 @@ impl AdtsConsumer for DumpAdtsConsumer {
             buffer_fullness, number_of_blocks
         );
         hexdump::hexdump(buf);
+        self.frame_count += 1;
     }
     fn error(&mut self, err: AdtsParseError) {
         println!("Error: {:?}", err);
@@ -44,9 +47,8 @@ where
 {
     const LEN: usize = 1024 * 1024;
     let mut buf = [0u8; LEN];
-    let mut frame_count = 0;
     let mut byte_count = 0;
-    let mut parser = AdtsParser::new(DumpAdtsConsumer {});
+    let mut parser = AdtsParser::new(DumpAdtsConsumer { frame_count: 0 });
     loop {
         match r.read(&mut buf[..])? {
             0 => break,
@@ -57,6 +59,7 @@ where
             }
         };
     }
+    println!("Processed {} bytes, {} ADTS frames", byte_count, parser.consumer.frame_count);
     Ok(())
 }
 
