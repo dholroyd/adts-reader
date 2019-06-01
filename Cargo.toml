@@ -7,7 +7,7 @@ categories = [ "multimedia::audio", "parser-implementations" ]
 keywords = [ "ADTS", "MPEG", "AAC", "ISO-13818-7" ]
 repository = "https://github.com/dholroyd/adts-reader"
 readme = "README.md"
-license = "BSD-2-Clause"
+license = "MIT/Apache-2.0"
 edition = "2018"
 
 [dependencies]
