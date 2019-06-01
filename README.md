@@ -2,6 +2,9 @@
 A Rust parser for the [Audio Data Transport Stream](https://wiki.multimedia.cx/index.php/ADTS)
 framing format used to carry encoded AAC audio data.
 
+[![crates.io version](https://img.shields.io/crates/v/adts-reader.svg)](https://crates.io/crates/adts-reader)
+[![Documentation](https://docs.rs/adts-reader/badge.svg)](https://docs.rs/adts-reader)
+
 👉 **NB** This is not an AAC decoder, nor is it able to parse the syntax of the AAC bitstream within the ADTS payload.
 
 Calling code should,
