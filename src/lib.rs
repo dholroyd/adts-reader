@@ -541,63 +541,65 @@ where
     /// will be buffered inside this AdtsParser instance, and the rest of the ADTS frame may be
     /// passed in another buffer in the next call to this method.
     pub fn push(&mut self, adts_buf: &[u8]) {
-        let buf: &[u8] = match self.state {
+        let mut buf = adts_buf;
+        match self.state {
             AdtsState::Error => return, // TODO: resync to recover from bitstream errors
             AdtsState::Incomplete => {
                 // on last call to push(), the end of the adts_buf held the start of an ADTS
                 // frame, and we copied that data into incomplete_buffer, so now lets try to add
                 // enough initial bytes from the adts_buf given to this call to get a complete
                 // frame
-                let to_read = self.desired_data_len.unwrap() - self.incomplete_frame.len();
-                if adts_buf.len() < to_read {
-                    self.incomplete_frame.extend_from_slice(adts_buf);
-                    return;
-                }
-                self.incomplete_frame
-                    .extend_from_slice(&adts_buf[..to_read]);
-                let mut still_more = false; // TODO: this is horrible
-                match AdtsHeader::from_bytes(&self.incomplete_frame[..]) {
-                    Ok(header) => {
-                        if (header.frame_length() as usize) > self.incomplete_frame.len() {
-                            self.desired_data_len = Some(header.frame_length() as usize);
-                            still_more = true;
-                        } else {
-                            if self.is_new_config(&self.incomplete_frame[..]) {
-                                Self::push_config(
-                                    &mut self.current_config,
-                                    &mut self.consumer,
-                                    &header,
-                                    &self.incomplete_frame[..],
-                                );
-                            }
-                            Self::push_payload(&mut self.consumer, header);
-                        }
+                loop {
+                    let bytes_needed_to_complete_frame = self.desired_data_len.unwrap() - self.incomplete_frame.len();
+                    if buf.len() < bytes_needed_to_complete_frame {
+                        self.incomplete_frame.extend_from_slice(buf);
+                        return;
                     }
-                    Err(e) => {
-                        self.state = AdtsState::Error;
-                        match e {
-                            AdtsHeaderError::BadSyncWord { .. } => {
-                                self.consumer.error(AdtsParseError::BadSyncWord);
-                                return;
-                            }
-                            AdtsHeaderError::BadFrameLength { .. } => {
-                                self.consumer.error(AdtsParseError::BadFrameLength);
-                                return;
-                            }
-                            AdtsHeaderError::NotEnoughData { expected, .. } => {
-                                self.desired_data_len = Some(expected);
+                    self.incomplete_frame
+                        .extend_from_slice(&buf[..bytes_needed_to_complete_frame]);
+                    buf = &buf[bytes_needed_to_complete_frame..];
+                    let mut still_more = false; // TODO: this is horrible
+                    match AdtsHeader::from_bytes(&self.incomplete_frame[..]) {
+                        Ok(header) => {
+                            if (header.frame_length() as usize) > self.incomplete_frame.len() {
+                                self.desired_data_len = Some(header.frame_length() as usize);
                                 still_more = true;
+                            } else {
+                                if self.is_new_config(&self.incomplete_frame[..]) {
+                                    Self::push_config(
+                                        &mut self.current_config,
+                                        &mut self.consumer,
+                                        &header,
+                                        &self.incomplete_frame[..],
+                                    );
+                                }
+                                Self::push_payload(&mut self.consumer, header);
+                            }
+                        }
+                        Err(e) => {
+                            self.state = AdtsState::Error;
+                            match e {
+                                AdtsHeaderError::BadSyncWord { .. } => {
+                                    self.consumer.error(AdtsParseError::BadSyncWord);
+                                    return;
+                                }
+                                AdtsHeaderError::BadFrameLength { .. } => {
+                                    self.consumer.error(AdtsParseError::BadFrameLength);
+                                    return;
+                                }
+                                AdtsHeaderError::NotEnoughData { expected, .. } => {
+                                    self.desired_data_len = Some(expected);
+                                    still_more = true;
+                                }
                             }
                         }
                     }
+                    if !still_more {
+                        break;
+                    }
                 }
-                if still_more {
-                    self.incomplete_frame.extend_from_slice(adts_buf);
-                    return;
-                }
-                &adts_buf[to_read..]
             }
-            AdtsState::Start => adts_buf,
+            AdtsState::Start => (),
         };
         let mut pos = 0;
         while pos <= buf.len() {
@@ -741,12 +743,14 @@ mod tests {
     struct MockConsumer {
         seq: usize,
         payload_seq: usize,
+        payload_size: Option<usize>,
     }
     impl MockConsumer {
         pub fn new() -> MockConsumer {
             MockConsumer {
                 seq: 0,
                 payload_seq: 0,
+                payload_size: None
             }
         }
         pub fn assert_seq(&mut self, expected: usize) {
@@ -774,6 +778,7 @@ mod tests {
             self.payload_seq += 1;
             let new_payload_seq = self.payload_seq;
             self.assert_seq(new_payload_seq);
+            self.payload_size = Some(buf.len());
         }
         fn error(&mut self, err: AdtsParseError) {
             panic!("no errors expected in bitstream");
@@ -786,8 +791,14 @@ mod tests {
             write_frame(&mut w)?;
             write_frame(&mut w)
         });
-        let mut parser = AdtsParser::new(MockConsumer::new());
-        parser.push(&header_data[..]);
+        for split in 0..header_data.len() {
+            let mut parser = AdtsParser::new(MockConsumer::new());
+            let (head, tail) = header_data.split_at(split);
+            parser.push(head);
+            parser.push(tail);
+            assert_eq!(2, parser.consumer.payload_seq);
+            assert_eq!(Some(1), parser.consumer.payload_size);
+        }
     }
 
     #[test]
