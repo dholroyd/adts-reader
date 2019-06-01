@@ -62,7 +62,7 @@ pub enum MpegVersion {
     Mpeg4,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum AudioObjectType {
     /// 'Main' profile
     AacMain,
@@ -80,7 +80,7 @@ pub enum ProtectionIndicator {
     CrcAbsent,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum SamplingFrequency {
     /// 96kHz
     Freq96000 = 0x0,
@@ -157,7 +157,7 @@ impl SamplingFrequency {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum ChannelConfiguration {
     ObjectTypeSpecificConfig = 0x0,
     Mono = 0x1,
