@@ -4,9 +4,6 @@ framing format used to carry encoded AAC audio data.
 
 👉 **NB** This is not an AAC decoder, nor is it able to parse the syntax of the AAC bitstream within the ADTS payload.
 
-This parser is _zero-copy_ for ADTS frames entirely contained within a given source `&[u8]` byte slice (copying will
-happen when an ADTS frame straddles the boundary from one source buffer to the next).
-
 Calling code should,
  - Provide an implementation of `AdtsConsumer` which will recieve callbacks as ADTS frame payloads are found
  - Pass buffers containing ADTS data into the `AdtsParser::push()` method
