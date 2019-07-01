@@ -211,6 +211,7 @@ impl<'buf> AdtsHeader<'buf> {
     /// not enough data to hold the payload, then [`payload()`](#method.payload) will return
     /// `None`).
     pub fn from_bytes(buf: &'buf [u8]) -> Result<AdtsHeader<'_>, AdtsHeaderError> {
+        assert!(!buf.is_empty());
         let header_len = 7;
         Self::check_len(header_len, buf.len())?;
         let header = AdtsHeader { buf };
@@ -574,6 +575,7 @@ where
                                     );
                                 }
                                 Self::push_payload(&mut self.consumer, header);
+                                self.state = AdtsState::Start;
                             }
                         }
                         Err(e) => {
@@ -602,7 +604,7 @@ where
             AdtsState::Start => (),
         };
         let mut pos = 0;
-        while pos <= buf.len() {
+        while pos < buf.len() {
             let remaining_data = &buf[pos..];
             let h = match AdtsHeader::from_bytes(remaining_data) {
                 Ok(header) => header,
@@ -638,6 +640,7 @@ where
                 );
             }
             Self::push_payload(&mut self.consumer, h);
+            self.state = AdtsState::Start;
             pos = new_pos;
         }
     }
