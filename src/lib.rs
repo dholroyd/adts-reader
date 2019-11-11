@@ -112,7 +112,7 @@ pub enum SamplingFrequency {
     FreqReserved0xf = 0xf,
 }
 
-impl SamplingFrequency {
+impl From<u8> for SamplingFrequency {
     fn from(value: u8) -> SamplingFrequency {
         match value {
             0x0 => SamplingFrequency::Freq96000,
@@ -134,7 +134,9 @@ impl SamplingFrequency {
             _ => panic!("invalud value {:x}", value),
         }
     }
+}
 
+impl SamplingFrequency {
     pub fn freq(&self) -> Option<u32> {
         match self {
             &SamplingFrequency::Freq96000 => Some(96000),
@@ -168,7 +170,7 @@ pub enum ChannelConfiguration {
     FiveOne = 0x6,
     SevenOne = 0x7,
 }
-impl ChannelConfiguration {
+impl From<u8> for ChannelConfiguration {
     fn from(value: u8) -> ChannelConfiguration {
         match value {
             0x0 => ChannelConfiguration::ObjectTypeSpecificConfig,
