@@ -131,7 +131,7 @@ impl From<u8> for SamplingFrequency {
             0xd => SamplingFrequency::FreqReserved0xd,
             0xe => SamplingFrequency::FreqReserved0xe,
             0xf => SamplingFrequency::FreqReserved0xf,
-            _ => panic!("invalud value {:x}", value),
+            _ => panic!("invalid value {:#x} when parsing SamplingFrequency, expected a 4 bit value", value),
         }
     }
 }
@@ -181,7 +181,7 @@ impl From<u8> for ChannelConfiguration {
             0x5 => ChannelConfiguration::Five,
             0x6 => ChannelConfiguration::FiveOne,
             0x7 => ChannelConfiguration::SevenOne,
-            _ => panic!("invalid value {}", value),
+            _ => panic!("invalid value {:#x} when parsing ChannelConfiguration, expected a 3 bit value", value),
         }
     }
 }
