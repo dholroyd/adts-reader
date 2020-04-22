@@ -689,20 +689,20 @@ where
 
 #[cfg(test)]
 mod tests {
-    use bitstream_io::{BitWriter, BE};
+    use bitstream_io::{BitWriter, BE, BigEndian};
     use std::io;
     use super::*;
 
     fn make_test_data<F>(builder: F) -> Vec<u8>
     where
-        F: Fn(BitWriter<'_, BE>) -> Result<(), io::Error>,
+        F: Fn(BitWriter<&mut Vec<u8>, BE>) -> Result<(), io::Error>,
     {
         let mut data: Vec<u8> = Vec::new();
-        builder(BitWriter::<BE>::new(&mut data)).unwrap();
+        builder(BitWriter::endian(&mut data, BigEndian)).unwrap();
         data
     }
 
-    fn write_frame(w: &mut BitWriter<'_, BE>) -> Result<(), io::Error> {
+    fn write_frame(w: &mut BitWriter<&mut Vec<u8>, BE>) -> Result<(), io::Error> {
         w.write(12, 0xfff)?; // sync_word
         w.write(1, 0)?; // mpeg_version
         w.write(2, 0)?; // layer
