@@ -13,5 +13,5 @@ edition = "2018"
 [dependencies]
 
 [dev-dependencies]
-bitstream-io = "0.8.5"
+bitstream-io = "0.9.0"
 hexdump = "0.1.0"
