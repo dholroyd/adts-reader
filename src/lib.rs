@@ -689,7 +689,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use bitstream_io::{BitWriter, BE, BigEndian};
+    use bitstream_io::{BitWriter, BitWrite, BE, BigEndian};
     use std::io;
     use super::*;
 
