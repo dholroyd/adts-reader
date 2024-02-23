@@ -59,7 +59,10 @@ where
             }
         };
     }
-    println!("Processed {} bytes, {} ADTS frames", byte_count, parser.consumer.frame_count);
+    println!(
+        "Processed {} bytes, {} ADTS frames",
+        byte_count, parser.consumer.frame_count
+    );
     Ok(())
 }
 

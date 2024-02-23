@@ -131,7 +131,10 @@ impl From<u8> for SamplingFrequency {
             0xd => SamplingFrequency::FreqReserved0xd,
             0xe => SamplingFrequency::FreqReserved0xe,
             0xf => SamplingFrequency::FreqReserved0xf,
-            _ => panic!("invalid value {:#x} when parsing SamplingFrequency, expected a 4 bit value", value),
+            _ => panic!(
+                "invalid value {:#x} when parsing SamplingFrequency, expected a 4 bit value",
+                value
+            ),
         }
     }
 }
@@ -181,7 +184,10 @@ impl From<u8> for ChannelConfiguration {
             0x5 => ChannelConfiguration::Five,
             0x6 => ChannelConfiguration::FiveOne,
             0x7 => ChannelConfiguration::SevenOne,
-            _ => panic!("invalid value {:#x} when parsing ChannelConfiguration, expected a 3 bit value", value),
+            _ => panic!(
+                "invalid value {:#x} when parsing ChannelConfiguration, expected a 3 bit value",
+                value
+            ),
         }
     }
 }
@@ -553,7 +559,8 @@ where
                 // enough initial bytes from the adts_buf given to this call to get a complete
                 // frame
                 loop {
-                    let bytes_needed_to_complete_frame = self.desired_data_len.unwrap() - self.incomplete_frame.len();
+                    let bytes_needed_to_complete_frame =
+                        self.desired_data_len.unwrap() - self.incomplete_frame.len();
                     if buf.len() < bytes_needed_to_complete_frame {
                         self.incomplete_frame.extend_from_slice(buf);
                         return;
@@ -689,9 +696,9 @@ where
 
 #[cfg(test)]
 mod tests {
-    use bitstream_io::{BitWriter, BitWrite, BE, BigEndian};
-    use std::io;
     use super::*;
+    use bitstream_io::{BigEndian, BitWrite, BitWriter, BE};
+    use std::io;
 
     fn make_test_data<F>(builder: F) -> Vec<u8>
     where
@@ -755,7 +762,7 @@ mod tests {
             MockConsumer {
                 seq: 0,
                 payload_seq: 0,
-                payload_size: None
+                payload_size: None,
             }
         }
         pub fn assert_seq(&mut self, expected: usize) {
