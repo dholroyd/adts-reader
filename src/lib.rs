@@ -139,22 +139,22 @@ impl From<u8> for SamplingFrequency {
 impl SamplingFrequency {
     pub fn freq(&self) -> Option<u32> {
         match self {
-            &SamplingFrequency::Freq96000 => Some(96000),
-            &SamplingFrequency::Freq88200 => Some(88200),
-            &SamplingFrequency::Freq64000 => Some(64000),
-            &SamplingFrequency::Freq48000 => Some(48000),
-            &SamplingFrequency::Freq44100 => Some(44100),
-            &SamplingFrequency::Freq32000 => Some(32000),
-            &SamplingFrequency::Freq24000 => Some(24000),
-            &SamplingFrequency::Freq22050 => Some(22050),
-            &SamplingFrequency::Freq16000 => Some(16000),
-            &SamplingFrequency::Freq12000 => Some(12000),
-            &SamplingFrequency::Freq11025 => Some(11025),
-            &SamplingFrequency::Freq8000 => Some(8000),
-            &SamplingFrequency::FreqReserved0xc => None,
-            &SamplingFrequency::FreqReserved0xd => None,
-            &SamplingFrequency::FreqReserved0xe => None,
-            &SamplingFrequency::FreqReserved0xf => None,
+            SamplingFrequency::Freq96000 => Some(96000),
+            SamplingFrequency::Freq88200 => Some(88200),
+            SamplingFrequency::Freq64000 => Some(64000),
+            SamplingFrequency::Freq48000 => Some(48000),
+            SamplingFrequency::Freq44100 => Some(44100),
+            SamplingFrequency::Freq32000 => Some(32000),
+            SamplingFrequency::Freq24000 => Some(24000),
+            SamplingFrequency::Freq22050 => Some(22050),
+            SamplingFrequency::Freq16000 => Some(16000),
+            SamplingFrequency::Freq12000 => Some(12000),
+            SamplingFrequency::Freq11025 => Some(11025),
+            SamplingFrequency::Freq8000 => Some(8000),
+            SamplingFrequency::FreqReserved0xc => None,
+            SamplingFrequency::FreqReserved0xd => None,
+            SamplingFrequency::FreqReserved0xe => None,
+            SamplingFrequency::FreqReserved0xf => None,
         }
     }
 }
