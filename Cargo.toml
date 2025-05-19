@@ -13,5 +13,5 @@ edition = "2021"
 [dependencies]
 
 [dev-dependencies]
-bitstream-io = "2.2.0"
+bitstream-io = "4.1.0"
 hexdump = "0.1.0"
