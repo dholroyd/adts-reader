@@ -27,9 +27,9 @@ impl AdtsConsumer for DumpAdtsConsumer {
             mpeg_version, protection, aot, freq, private_bit, channels, originality, home
         );
     }
-    fn payload(&mut self, buffer_fullness: u16, number_of_blocks: u8, buf: &[u8]) {
+    fn payload(&mut self, buffer_fullness: BufferFullness, number_of_blocks: u8, buf: &[u8]) {
         println!(
-            "ADTS Frame buffer_fullness={} blocks={}",
+            "ADTS Frame buffer_fullness={:?} blocks={}",
             buffer_fullness, number_of_blocks
         );
         hexdump::hexdump(buf);

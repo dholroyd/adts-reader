@@ -198,6 +198,14 @@ pub enum Originality {
     Copy,
 }
 
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum BufferFullness {
+    /// Variable bitrate; buffer fullness is not applicable (raw value 0x7FF)
+    Vbr,
+    /// Constant bitrate with the given buffer fullness value
+    Cbr(u16),
+}
+
 #[derive(Debug, PartialEq)]
 pub enum CopyrightIdentificationStart {
     Start,
@@ -345,8 +353,13 @@ impl<'buf> AdtsHeader<'buf> {
         }
     }
 
-    pub fn adts_buffer_fullness(&self) -> u16 {
-        u16::from(self.buf[5] & 0b00011111) << 6 | u16::from(self.buf[6]) >> 2
+    pub fn adts_buffer_fullness(&self) -> BufferFullness {
+        let raw = u16::from(self.buf[5] & 0b00011111) << 6 | u16::from(self.buf[6]) >> 2;
+        if raw == 0x7FF {
+            BufferFullness::Vbr
+        } else {
+            BufferFullness::Cbr(raw)
+        }
     }
 
     /// Gives the 16-bit cyclic redundancy check value stored in this frame header, or `None` if
@@ -452,7 +465,7 @@ pub enum AdtsParseError {
 ///     fn new_config(&mut self, mpeg_version: MpegVersion, protection: ProtectionIndicator, aot: AudioObjectType, freq: SamplingFrequency, private_bit: u8, channels: ChannelConfiguration, originality: Originality, home: u8) {
 ///         println!("Configuration {:?} {:?} {:?}", aot, freq, channels);
 ///     }
-///     fn payload(&mut self, buffer_fullness: u16, number_of_blocks: u8, buf: &[u8]) {
+///     fn payload(&mut self, buffer_fullness: BufferFullness, number_of_blocks: u8, buf: &[u8]) {
 ///         println!(" - frame of {} bytes", buf.len());
 ///     }
 ///     fn error(&mut self, err: AdtsParseError) {
@@ -484,7 +497,7 @@ pub trait AdtsConsumer {
     );
 
     /// called with the ADTS frame payload, and frame-specific header values
-    fn payload(&mut self, buffer_fullness: u16, number_of_blocks: u8, buf: &[u8]);
+    fn payload(&mut self, buffer_fullness: BufferFullness, number_of_blocks: u8, buf: &[u8]);
 
     /// called if AdtsParser encounters an error in the ADTS bitstream.
     fn error(&mut self, err: AdtsParseError);
@@ -748,7 +761,7 @@ mod tests {
         );
         assert_eq!(header.frame_length(), 8);
         assert_eq!(header.payload_length(), Some(8 - 7));
-        assert_eq!(header.adts_buffer_fullness(), 123);
+        assert_eq!(header.adts_buffer_fullness(), BufferFullness::Cbr(123));
         assert_eq!(header.number_of_raw_data_blocks_in_frame(), 1);
         assert_eq!(header.payload(), Ok(&[0b10000001][..]));
     }
@@ -774,7 +787,7 @@ mod tests {
             w.write(8, 0x00) // 1 byte of payload data
         });
         let header = AdtsHeader::from_bytes(&header_data[..]).unwrap();
-        assert_eq!(header.adts_buffer_fullness(), 0x7FF);
+        assert_eq!(header.adts_buffer_fullness(), BufferFullness::Vbr);
     }
 
     struct MockConsumer {
@@ -811,7 +824,7 @@ mod tests {
             self.assert_seq(0);
             assert_eq!(mpeg_version, MpegVersion::Mpeg4);
         }
-        fn payload(&mut self, _buffer_fullness: u16, _number_of_blocks: u8, buf: &[u8]) {
+        fn payload(&mut self, _buffer_fullness: BufferFullness, _number_of_blocks: u8, buf: &[u8]) {
             self.payload_seq += 1;
             let new_payload_seq = self.payload_seq;
             self.assert_seq(new_payload_seq);

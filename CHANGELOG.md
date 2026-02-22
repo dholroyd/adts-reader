@@ -8,4 +8,6 @@
  - Fixed `adts_buffer_fullness()` incorrectly dropping the 3 most significant bits of the 11-bit field
 
 ### Changed
+ - **Breaking:** `adts_buffer_fullness()` now returns `BufferFullness` enum
+   instead of `u16`, distinguishing VBR from the other (CBR) values.
  - Switched to Rust 2021 edition

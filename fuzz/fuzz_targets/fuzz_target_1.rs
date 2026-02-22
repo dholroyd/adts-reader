@@ -20,7 +20,7 @@ impl AdtsConsumer for NullConsumer {
         home: u8,
     ) {
     }
-    fn payload(&mut self, buffer_fullness: u16, number_of_blocks: u8, buf: &[u8]) {}
+    fn payload(&mut self, buffer_fullness: BufferFullness, number_of_blocks: u8, buf: &[u8]) {}
     fn error(&mut self, err: AdtsParseError) {}
 }
 
