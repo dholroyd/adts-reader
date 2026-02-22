@@ -346,7 +346,7 @@ impl<'buf> AdtsHeader<'buf> {
     }
 
     pub fn adts_buffer_fullness(&self) -> u16 {
-        u16::from(self.buf[5] & 0b00000011) << 6 | u16::from(self.buf[6]) >> 2
+        u16::from(self.buf[5] & 0b00011111) << 6 | u16::from(self.buf[6]) >> 2
     }
 
     /// Gives the 16-bit cyclic redundancy check value stored in this frame header, or `None` if
@@ -751,6 +751,30 @@ mod tests {
         assert_eq!(header.adts_buffer_fullness(), 123);
         assert_eq!(header.number_of_raw_data_blocks_in_frame(), 1);
         assert_eq!(header.payload(), Ok(&[0b10000001][..]));
+    }
+
+    #[test]
+    fn large_buffer_fullness() {
+        let header_data = make_test_data(|mut w| {
+            w.write(12, 0xfff)?; // sync_word
+            w.write(1, 0)?; // mpeg_version
+            w.write(2, 0)?; // layer
+            w.write(1, 1)?; // protection_absent
+            w.write(2, 0)?; // object_type
+            w.write(4, 0b0011)?; // sampling_frequency_index
+            w.write(1, 0)?; // private_bit
+            w.write(3, 1)?; // channel_configuration
+            w.write(1, 0)?; // original_copy
+            w.write(1, 0)?; // home
+            w.write(1, 0)?; // copyright_identification_bit
+            w.write(1, 0)?; // copyright_identification_start
+            w.write(13, 8)?; // frame_length
+            w.write(11, 0x7FF)?; // adts_buffer_fullness (max 11-bit value = 2047)
+            w.write(2, 0)?; // number_of_raw_data_blocks_in_frame
+            w.write(8, 0x00) // 1 byte of payload data
+        });
+        let header = AdtsHeader::from_bytes(&header_data[..]).unwrap();
+        assert_eq!(header.adts_buffer_fullness(), 0x7FF);
     }
 
     struct MockConsumer {
