@@ -293,7 +293,7 @@ impl<'buf> AdtsHeader<'buf> {
 
     /// either 1 or 0
     pub fn private_bit(&self) -> u8 {
-        self.buf[2] & 1
+        (self.buf[2] >> 1) & 1
     }
 
     pub fn channel_configuration(&self) -> ChannelConfiguration {
@@ -737,6 +737,7 @@ mod tests {
         assert_eq!(header.audio_object_type(), AudioObjectType::AacMain);
         assert_eq!(header.sampling_frequency(), SamplingFrequency::Freq48000);
         assert_eq!(header.sampling_frequency().freq(), Some(48000));
+        assert_eq!(header.private_bit(), 1);
         assert_eq!(header.channel_configuration(), ChannelConfiguration::Stereo);
         assert_eq!(header.originality(), Originality::Copy);
         assert_eq!(header.home(), 0);
