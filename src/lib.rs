@@ -302,9 +302,9 @@ impl<'buf> AdtsHeader<'buf> {
 
     pub fn originality(&self) -> Originality {
         if self.buf[3] & 0b0010_0000 != 0 {
-            Originality::Copy
-        } else {
             Originality::Original
+        } else {
+            Originality::Copy
         }
     }
 
@@ -739,7 +739,7 @@ mod tests {
         assert_eq!(header.sampling_frequency().freq(), Some(48000));
         assert_eq!(header.private_bit(), 1);
         assert_eq!(header.channel_configuration(), ChannelConfiguration::Stereo);
-        assert_eq!(header.originality(), Originality::Copy);
+        assert_eq!(header.originality(), Originality::Original);
         assert_eq!(header.home(), 0);
         assert_eq!(header.copyright_identification_bit(), 0);
         assert_eq!(
