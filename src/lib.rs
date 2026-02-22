@@ -218,7 +218,7 @@ impl<'buf> AdtsHeader<'buf> {
     /// the whole of the payload that the header indicates should be present (however _if_ there is
     /// not enough data to hold the payload, then [`payload()`](#method.payload) will return
     /// `None`).
-    pub fn from_bytes(buf: &'buf [u8]) -> Result<AdtsHeader<'_>, AdtsHeaderError> {
+    pub fn from_bytes(buf: &'buf [u8]) -> Result<AdtsHeader<'buf>, AdtsHeaderError> {
         assert!(!buf.is_empty());
         let header_len = 7;
         Self::check_len(header_len, buf.len())?;
