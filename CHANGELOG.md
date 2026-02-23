@@ -7,6 +7,7 @@
  - Fixed `originality()` logic, which previously did the opposite of what the spec wants
  - Fixed `adts_buffer_fullness()` incorrectly dropping the 3 most significant bits of the 11-bit field
  - `AdtsParser` config change detection should now detect changes in all config fields, rather than just a subset
+ - `AdtsParser` no longer enters a permanent error state when accumulating a partial header across multiple `push()` calls (e.g. CRC header split across buffers)
 
 ### Changed
  - **Breaking:** `adts_buffer_fullness()` now returns `BufferFullness` enum

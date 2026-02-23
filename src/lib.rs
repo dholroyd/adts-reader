@@ -602,13 +602,14 @@ where
                             }
                         }
                         Err(e) => {
-                            self.state = AdtsState::Error;
                             match e {
                                 AdtsHeaderError::BadSyncWord { .. } => {
+                                    self.state = AdtsState::Error;
                                     self.consumer.error(AdtsParseError::BadSyncWord);
                                     return;
                                 }
                                 AdtsHeaderError::BadFrameLength { .. } => {
+                                    self.state = AdtsState::Error;
                                     self.consumer.error(AdtsParseError::BadFrameLength);
                                     return;
                                 }
@@ -851,6 +852,58 @@ mod tests {
             assert_eq!(2, parser.consumer.payload_seq);
             assert_eq!(Some(1), parser.consumer.payload_size);
         }
+    }
+
+    struct CountingConsumer {
+        payload_count: usize,
+    }
+    impl AdtsConsumer for CountingConsumer {
+        fn new_config(&mut self, _: MpegVersion, _: ProtectionIndicator, _: AudioObjectType, _: SamplingFrequency, _: u8, _: ChannelConfiguration, _: Originality, _: u8) {}
+        fn payload(&mut self, _: BufferFullness, _: u8, _: &[u8]) {
+            self.payload_count += 1;
+        }
+        fn error(&mut self, err: AdtsParseError) {
+            panic!("no errors expected: {:?}", err);
+        }
+    }
+
+    #[test]
+    fn crc_frame_split_across_pushes() {
+        // A CRC-protected frame has a 9-byte header (7 fixed + 2 CRC).
+        // Split so the Incomplete path gets exactly 7 bytes first (triggering
+        // NotEnoughData for the CRC bytes), then runs out of input before
+        // accumulating the remaining 2 CRC bytes.  Bug #5 would set state to
+        // Error here, causing the third push() to silently drop data.
+        let frame_data = make_test_data(|mut w| {
+            w.write(12, 0xfff)?; // sync_word
+            w.write(1, 0)?; // mpeg_version
+            w.write(2, 0)?; // layer
+            w.write(1, 0)?; // protection_absent = 0 → CRC present
+            w.write(2, 0)?; // object_type
+            w.write(4, 0b0011)?; // sampling_frequency_index
+            w.write(1, 0)?; // private_bit
+            w.write(3, 2)?; // channel_configuration
+            w.write(1, 0)?; // original_copy
+            w.write(1, 0)?; // home
+            w.write(1, 0)?; // copyright_identification_bit
+            w.write(1, 0)?; // copyright_identification_start
+            w.write(13, 10)?; // frame_length (9 header + 1 payload)
+            w.write(11, 100)?; // adts_buffer_fullness
+            w.write(2, 0)?; // number_of_raw_data_blocks_in_frame
+            w.write(16, 0)?; // CRC
+            w.write(8, 0xAB) // 1 byte of payload
+        });
+
+        // Push 1: 5 bytes → not enough for header (need 7), enters Incomplete
+        // Push 2: 2 bytes → completes 7, but CRC needs 9 → NotEnoughData in
+        //         Incomplete loop; no more input bytes → returns
+        // Push 3: remaining bytes → should still work (not Error state)
+        let mut parser = AdtsParser::new(CountingConsumer { payload_count: 0 });
+        parser.push(&frame_data[..5]);
+        parser.push(&frame_data[5..7]);
+        assert_eq!(0, parser.consumer.payload_count, "no payload yet");
+        parser.push(&frame_data[7..]);
+        assert_eq!(1, parser.consumer.payload_count, "payload should have been delivered");
     }
 
     #[test]
