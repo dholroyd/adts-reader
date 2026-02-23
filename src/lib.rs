@@ -514,7 +514,7 @@ where
     C: AdtsConsumer,
 {
     pub consumer: C,
-    current_config: [u8; 3],
+    current_config: [u8; 4],
     state: AdtsState,
     incomplete_frame: Vec<u8>,
     desired_data_len: Option<usize>,
@@ -526,7 +526,7 @@ where
     pub fn new(consumer: C) -> AdtsParser<C> {
         AdtsParser {
             consumer,
-            current_config: [0; 3],
+            current_config: [0; 4],
             state: AdtsState::Start,
             incomplete_frame: vec![],
             desired_data_len: None,
@@ -534,7 +534,8 @@ where
     }
 
     fn is_new_config(&self, header_data: &[u8]) -> bool {
-        self.current_config != header_data[0..3]
+        self.current_config[0..3] != header_data[0..3]
+            || self.current_config[3] != header_data[3] & 0b1111_0000
     }
 
     fn remember(&mut self, remaining_data: &[u8], desired_data_len: usize) {
@@ -668,12 +669,13 @@ where
     }
 
     fn push_config(
-        current_config: &mut [u8; 3],
+        current_config: &mut [u8; 4],
         consumer: &mut C,
         h: &AdtsHeader<'_>,
         frame_buffer: &[u8],
     ) {
-        current_config.copy_from_slice(&frame_buffer[0..3]);
+        current_config[0..3].copy_from_slice(&frame_buffer[0..3]);
+        current_config[3] = frame_buffer[3] & 0b1111_0000;
         consumer.new_config(
             h.mpeg_version(),
             h.protection(),
