@@ -13,7 +13,7 @@ impl AdtsConsumer for NullConsumer {
         mpeg_version: MpegVersion,
         protection: ProtectionIndicator,
         aot: AudioObjectType,
-        freq: SamplingFrequency,
+        freq: SamplingFrequencyIndex,
         private_bit: u8,
         channels: ChannelConfiguration,
         originality: Originality,

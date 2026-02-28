@@ -29,6 +29,7 @@
 // TODO: might be better to implement AdtsParser as an iterator, rather then doing callbacks into a
 // trait implementation -- it looked hard to implement though!
 
+pub use mpeg4_audio_const::{AudioObjectType, ChannelConfiguration, SamplingFrequencyIndex};
 use std::fmt;
 
 #[derive(Debug)]
@@ -62,134 +63,10 @@ pub enum MpegVersion {
     Mpeg4,
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub enum AudioObjectType {
-    /// 'Main' profile
-    AacMain,
-    /// 'Low Complexity' profile
-    AacLC,
-    /// 'Scalable Sample Rate' profile
-    AacSSR,
-    /// 'Long Term Prediction' profile
-    AacLTP,
-}
-
 #[derive(Debug, PartialEq)]
 pub enum ProtectionIndicator {
     CrcPresent,
     CrcAbsent,
-}
-
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub enum SamplingFrequency {
-    /// 96kHz
-    Freq96000 = 0x0,
-    /// 88.2kHz
-    Freq88200 = 0x1,
-    /// 64kHz
-    Freq64000 = 0x2,
-    /// 48kHz
-    Freq48000 = 0x3,
-    /// 44.1kHz
-    Freq44100 = 0x4,
-    /// 32kHz
-    Freq32000 = 0x5,
-    /// 24kHz
-    Freq24000 = 0x6,
-    /// 22.05kHz
-    Freq22050 = 0x7,
-    /// 16kHz
-    Freq16000 = 0x8,
-    /// 12kHz
-    Freq12000 = 0x9,
-    /// 11.025kHz
-    Freq11025 = 0xa,
-    /// 8kHz
-    Freq8000 = 0xb,
-    FreqReserved0xc = 0xc,
-    FreqReserved0xd = 0xd,
-    FreqReserved0xe = 0xe,
-    FreqReserved0xf = 0xf,
-}
-
-impl From<u8> for SamplingFrequency {
-    fn from(value: u8) -> SamplingFrequency {
-        match value {
-            0x0 => SamplingFrequency::Freq96000,
-            0x1 => SamplingFrequency::Freq88200,
-            0x2 => SamplingFrequency::Freq64000,
-            0x3 => SamplingFrequency::Freq48000,
-            0x4 => SamplingFrequency::Freq44100,
-            0x5 => SamplingFrequency::Freq32000,
-            0x6 => SamplingFrequency::Freq24000,
-            0x7 => SamplingFrequency::Freq22050,
-            0x8 => SamplingFrequency::Freq16000,
-            0x9 => SamplingFrequency::Freq12000,
-            0xa => SamplingFrequency::Freq11025,
-            0xb => SamplingFrequency::Freq8000,
-            0xc => SamplingFrequency::FreqReserved0xc,
-            0xd => SamplingFrequency::FreqReserved0xd,
-            0xe => SamplingFrequency::FreqReserved0xe,
-            0xf => SamplingFrequency::FreqReserved0xf,
-            _ => panic!(
-                "invalid value {:#x} when parsing SamplingFrequency, expected a 4 bit value",
-                value
-            ),
-        }
-    }
-}
-
-impl SamplingFrequency {
-    pub fn freq(&self) -> Option<u32> {
-        match self {
-            SamplingFrequency::Freq96000 => Some(96000),
-            SamplingFrequency::Freq88200 => Some(88200),
-            SamplingFrequency::Freq64000 => Some(64000),
-            SamplingFrequency::Freq48000 => Some(48000),
-            SamplingFrequency::Freq44100 => Some(44100),
-            SamplingFrequency::Freq32000 => Some(32000),
-            SamplingFrequency::Freq24000 => Some(24000),
-            SamplingFrequency::Freq22050 => Some(22050),
-            SamplingFrequency::Freq16000 => Some(16000),
-            SamplingFrequency::Freq12000 => Some(12000),
-            SamplingFrequency::Freq11025 => Some(11025),
-            SamplingFrequency::Freq8000 => Some(8000),
-            SamplingFrequency::FreqReserved0xc => None,
-            SamplingFrequency::FreqReserved0xd => None,
-            SamplingFrequency::FreqReserved0xe => None,
-            SamplingFrequency::FreqReserved0xf => None,
-        }
-    }
-}
-
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub enum ChannelConfiguration {
-    ObjectTypeSpecificConfig = 0x0,
-    Mono = 0x1,
-    Stereo = 0x2,
-    Three = 0x3,
-    Four = 0x4,
-    Five = 0x5,
-    FiveOne = 0x6,
-    SevenOne = 0x7,
-}
-impl From<u8> for ChannelConfiguration {
-    fn from(value: u8) -> ChannelConfiguration {
-        match value {
-            0x0 => ChannelConfiguration::ObjectTypeSpecificConfig,
-            0x1 => ChannelConfiguration::Mono,
-            0x2 => ChannelConfiguration::Stereo,
-            0x3 => ChannelConfiguration::Three,
-            0x4 => ChannelConfiguration::Four,
-            0x5 => ChannelConfiguration::Five,
-            0x6 => ChannelConfiguration::FiveOne,
-            0x7 => ChannelConfiguration::SevenOne,
-            _ => panic!(
-                "invalid value {:#x} when parsing ChannelConfiguration, expected a 3 bit value",
-                value
-            ),
-        }
-    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -287,16 +164,16 @@ impl<'buf> AdtsHeader<'buf> {
     // Indicates what type of AAC data this stream contains
     pub fn audio_object_type(&self) -> AudioObjectType {
         match self.buf[2] & 0b1100_0000 {
-            0b0000_0000 => AudioObjectType::AacMain,
-            0b0100_0000 => AudioObjectType::AacLC,
-            0b1000_0000 => AudioObjectType::AacSSR,
-            0b1100_0000 => AudioObjectType::AacLTP,
+            0b0000_0000 => AudioObjectType::AAC_MAIN,
+            0b0100_0000 => AudioObjectType::AAC_LC,
+            0b1000_0000 => AudioObjectType::AAC_SSR,
+            0b1100_0000 => AudioObjectType::AAC_LTP,
             v => panic!("impossible value {:#b}", v),
         }
     }
 
-    pub fn sampling_frequency(&self) -> SamplingFrequency {
-        SamplingFrequency::from(self.buf[2] >> 2 & 0b1111)
+    pub fn sampling_frequency(&self) -> SamplingFrequencyIndex {
+        SamplingFrequencyIndex::new(self.buf[2] >> 2 & 0b1111)
     }
 
     /// either 1 or 0
@@ -305,7 +182,7 @@ impl<'buf> AdtsHeader<'buf> {
     }
 
     pub fn channel_configuration(&self) -> ChannelConfiguration {
-        ChannelConfiguration::from(self.buf[2] << 2 & 0b0100 | self.buf[3] >> 6)
+        ChannelConfiguration::new(self.buf[2] << 2 & 0b0100 | self.buf[3] >> 6)
     }
 
     pub fn originality(&self) -> Originality {
@@ -462,7 +339,7 @@ pub enum AdtsParseError {
 ///
 /// struct MyConsumer { }
 /// impl AdtsConsumer for MyConsumer {
-///     fn new_config(&mut self, mpeg_version: MpegVersion, protection: ProtectionIndicator, aot: AudioObjectType, freq: SamplingFrequency, private_bit: u8, channels: ChannelConfiguration, originality: Originality, home: u8) {
+///     fn new_config(&mut self, mpeg_version: MpegVersion, protection: ProtectionIndicator, aot: AudioObjectType, freq: SamplingFrequencyIndex, private_bit: u8, channels: ChannelConfiguration, originality: Originality, home: u8) {
 ///         println!("Configuration {:?} {:?} {:?}", aot, freq, channels);
 ///     }
 ///     fn payload(&mut self, buffer_fullness: BufferFullness, number_of_blocks: u8, buf: &[u8]) {
@@ -489,7 +366,7 @@ pub trait AdtsConsumer {
         mpeg_version: MpegVersion,
         protection: ProtectionIndicator,
         aot: AudioObjectType,
-        freq: SamplingFrequency,
+        freq: SamplingFrequencyIndex,
         private_bit: u8,
         channels: ChannelConfiguration,
         originality: Originality,
@@ -601,24 +478,22 @@ where
                                 self.state = AdtsState::Start;
                             }
                         }
-                        Err(e) => {
-                            match e {
-                                AdtsHeaderError::BadSyncWord { .. } => {
-                                    self.state = AdtsState::Error;
-                                    self.consumer.error(AdtsParseError::BadSyncWord);
-                                    return;
-                                }
-                                AdtsHeaderError::BadFrameLength { .. } => {
-                                    self.state = AdtsState::Error;
-                                    self.consumer.error(AdtsParseError::BadFrameLength);
-                                    return;
-                                }
-                                AdtsHeaderError::NotEnoughData { expected, .. } => {
-                                    self.desired_data_len = Some(expected);
-                                    still_more = true;
-                                }
+                        Err(e) => match e {
+                            AdtsHeaderError::BadSyncWord { .. } => {
+                                self.state = AdtsState::Error;
+                                self.consumer.error(AdtsParseError::BadSyncWord);
+                                return;
                             }
-                        }
+                            AdtsHeaderError::BadFrameLength { .. } => {
+                                self.state = AdtsState::Error;
+                                self.consumer.error(AdtsParseError::BadFrameLength);
+                                return;
+                            }
+                            AdtsHeaderError::NotEnoughData { expected, .. } => {
+                                self.desired_data_len = Some(expected);
+                                still_more = true;
+                            }
+                        },
                     }
                     if !still_more {
                         break;
@@ -750,11 +625,14 @@ mod tests {
         let header = AdtsHeader::from_bytes(&header_data[..]).unwrap();
         assert_eq!(header.mpeg_version(), MpegVersion::Mpeg4);
         assert_eq!(header.protection(), ProtectionIndicator::CrcAbsent);
-        assert_eq!(header.audio_object_type(), AudioObjectType::AacMain);
-        assert_eq!(header.sampling_frequency(), SamplingFrequency::Freq48000);
+        assert_eq!(header.audio_object_type(), AudioObjectType::AAC_MAIN);
+        assert_eq!(
+            header.sampling_frequency(),
+            SamplingFrequencyIndex::FREQ_48000
+        );
         assert_eq!(header.sampling_frequency().freq(), Some(48000));
         assert_eq!(header.private_bit(), 1);
-        assert_eq!(header.channel_configuration(), ChannelConfiguration::Stereo);
+        assert_eq!(header.channel_configuration(), ChannelConfiguration::STEREO);
         assert_eq!(header.originality(), Originality::Original);
         assert_eq!(header.home(), 0);
         assert_eq!(header.copyright_identification_bit(), 0);
@@ -818,7 +696,7 @@ mod tests {
             mpeg_version: MpegVersion,
             _protection: ProtectionIndicator,
             _aot: AudioObjectType,
-            _freq: SamplingFrequency,
+            _freq: SamplingFrequencyIndex,
             _private_bit: u8,
             _channels: ChannelConfiguration,
             _originality: Originality,
@@ -858,7 +736,18 @@ mod tests {
         payload_count: usize,
     }
     impl AdtsConsumer for CountingConsumer {
-        fn new_config(&mut self, _: MpegVersion, _: ProtectionIndicator, _: AudioObjectType, _: SamplingFrequency, _: u8, _: ChannelConfiguration, _: Originality, _: u8) {}
+        fn new_config(
+            &mut self,
+            _: MpegVersion,
+            _: ProtectionIndicator,
+            _: AudioObjectType,
+            _: SamplingFrequencyIndex,
+            _: u8,
+            _: ChannelConfiguration,
+            _: Originality,
+            _: u8,
+        ) {
+        }
         fn payload(&mut self, _: BufferFullness, _: u8, _: &[u8]) {
             self.payload_count += 1;
         }
@@ -903,7 +792,10 @@ mod tests {
         parser.push(&frame_data[5..7]);
         assert_eq!(0, parser.consumer.payload_count, "no payload yet");
         parser.push(&frame_data[7..]);
-        assert_eq!(1, parser.consumer.payload_count, "payload should have been delivered");
+        assert_eq!(
+            1, parser.consumer.payload_count,
+            "payload should have been delivered"
+        );
     }
 
     #[test]
