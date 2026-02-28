@@ -39,10 +39,10 @@ Configuration data is provided at stream start, and to simplify calling code the
  * Variable header fields data
    * [ ] `copyright_identifier` / `copyright_number` - deriving these values is not supported, since I've not seen any
      example bitstreams that use them
-   * [x] `buffer_fullness`
-   * [x] `number_of_blocks`
-   * [ ] `crc` - not currently available (also, the CRC does not apply to all payload bytes; _cyclic reduncancy check_
-     requires AAC bitstream parsing)
+   * [x] `buffer_fullness` - almost all systems set this to VBR (`0x7ff`)
+   * [x] `number_of_blocks` - almost all systems just set this to `1`
+   * [ ] `crc` - the raw CRC value from the header is available, but is unchecked (but the CRC does not apply to all payload bytes;
+    _cyclic redundancy check_ requires AAC bitstream parsing)
  * AAC payload data
    * A `&[u8]` byte slice containing a complete ADTS frame payload (which might be composed of one or more AAC blocks,
      per _number_of_blocks_)
