@@ -70,6 +70,6 @@ fn main() {
     let mut args = env::args();
     args.next();
     let name = args.next().unwrap();
-    let f = File::open(&name).expect(&format!("file not found: {}", &name));
-    run(f).expect(&format!("error reading {}", &name));
+    let f = File::open(&name).unwrap_or_else(|_| panic!("file not found: {}", &name));
+    run(f).unwrap_or_else(|_| panic!("error reading {}", &name));
 }
