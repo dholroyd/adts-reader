@@ -29,7 +29,9 @@
 // TODO: might be better to implement AdtsParser as an iterator, rather then doing callbacks into a
 // trait implementation -- it looked hard to implement though!
 
-pub use mpeg4_audio_const::{AudioObjectType, ChannelConfiguration, SamplingFrequencyIndex};
+pub use mpeg4_audio_const::{
+    AudioObjectType, ChannelConfiguration, SamplingFrequencyIndex, SamplingFrequencyIndexError,
+};
 use std::fmt;
 
 #[derive(Debug)]
@@ -47,6 +49,8 @@ pub enum AdtsHeaderError {
         minimum: usize,
         actual: usize,
     },
+    /// The sampling_frequency_index field holds a value that is not a valid index
+    BadSamplingFrequency(SamplingFrequencyIndexError),
 }
 
 /// Error indicating that not enough data was provided to `AdtsHeader` to be able to extract the
@@ -115,6 +119,8 @@ impl<'buf> AdtsHeader<'buf> {
         if header.protection() == ProtectionIndicator::CrcPresent {
             Self::check_len(header_len + crc_len, buf.len())?;
         }
+        SamplingFrequencyIndex::try_from(header.buf[2] >> 2 & 0b1111)
+            .map_err(AdtsHeaderError::BadSamplingFrequency)?;
         if header.frame_length() < header.header_length() {
             return Err(AdtsHeaderError::BadFrameLength {
                 actual: header.frame_length() as usize,
@@ -328,6 +334,7 @@ enum AdtsState {
 pub enum AdtsParseError {
     BadSyncWord,
     BadFrameLength,
+    BadSamplingFrequency,
 }
 
 /// Trait to be implemented by types that wish to consume the ADTS data produced by [`AdtsParser`](struct.AdtsParser.html).
@@ -489,6 +496,11 @@ where
                                 self.consumer.error(AdtsParseError::BadFrameLength);
                                 return;
                             }
+                            AdtsHeaderError::BadSamplingFrequency(_) => {
+                                self.state = AdtsState::Error;
+                                self.consumer.error(AdtsParseError::BadSamplingFrequency);
+                                return;
+                            }
                             AdtsHeaderError::NotEnoughData { expected, .. } => {
                                 self.desired_data_len = Some(expected);
                                 still_more = true;
@@ -520,6 +532,9 @@ where
                         AdtsHeaderError::NotEnoughData { expected, .. } => {
                             self.remember(remaining_data, expected);
                             return;
+                        }
+                        AdtsHeaderError::BadSamplingFrequency(_) => {
+                            self.consumer.error(AdtsParseError::BadSamplingFrequency);
                         }
                     }
                     return;
@@ -804,5 +819,32 @@ mod tests {
         let mut parser = AdtsParser::new(MockConsumer::new());
         parser.push(&header_data[..5]);
         parser.push(&header_data[5..7]);
+    }
+
+    #[test]
+    fn bad_sampling_frequency() {
+        // sampling_frequency_index = 0xf (escape value) should produce an error, not panic
+        let header_data = make_test_data(|mut w| {
+            w.write(12, 0xfff)?; // sync_word
+            w.write(1, 0)?; // mpeg_version
+            w.write(2, 0)?; // layer
+            w.write(1, 1)?; // protection_absent
+            w.write(2, 0)?; // object_type
+            w.write(4, 0b1111)?; // sampling_frequency_index = 0xf (invalid)
+            w.write(1, 0)?; // private_bit
+            w.write(3, 1)?; // channel_configuration
+            w.write(1, 0)?; // original_copy
+            w.write(1, 0)?; // home
+            w.write(1, 0)?; // copyright_identification_bit
+            w.write(1, 0)?; // copyright_identification_start
+            w.write(13, 8)?; // frame_length
+            w.write(11, 0)?; // adts_buffer_fullness
+            w.write(2, 0)?; // number_of_raw_data_blocks_in_frame
+            w.write(8, 0x00) // 1 byte of payload
+        });
+        assert!(matches!(
+            AdtsHeader::from_bytes(&header_data),
+            Err(AdtsHeaderError::BadSamplingFrequency(_))
+        ));
     }
 }
